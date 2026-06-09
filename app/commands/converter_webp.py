@@ -3,7 +3,7 @@ from pathlib import Path
 
 import typer
 
-from core.converter import convert_to_webp
+from app.core.converter import convert_to_webp
 
 app = typer.Typer()
 
@@ -21,7 +21,7 @@ def wc(
     ),
 ):
 
-    if path is None:
+    if path == ".":
         path = str(Path.cwd())
 
     asyncio.run(_wc(path, delete_img))
