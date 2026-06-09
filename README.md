@@ -46,7 +46,7 @@ webify --help
 ### Convert images in the current directory
 
 ```bash
-webify wc
+webify wc .
 ```
 
 ### Convert images in a specific directory
@@ -74,7 +74,7 @@ webify wc /path/to/images --no-delete
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--delete/--no-delete` | `--delete` | Whether to delete original images after conversion |
+| `-f` | `--no-delete` | Whether to delete original images after conversion |
 | `--help` | | Show help message |
 
 ---
@@ -82,15 +82,12 @@ webify wc /path/to/images --no-delete
 ## Project Structure
 
 ```
-CLI-webp/
+Webify/
 ├── app/
-│   ├── __init__.py
 │   ├── main.py
 │   ├── commands/
-│   │   ├── __init__.py
 │   │   └── converter_webp.py
 │   └── core/
-│       ├── __init__.py
 │       └── converter.py
 ├── pyproject.toml
 └── README.md
@@ -110,4 +107,4 @@ CLI-webp/
 
 ## License
 
-MIT
+Apache License
