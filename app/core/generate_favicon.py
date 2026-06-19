@@ -1,72 +1,168 @@
 import os
 import shutil
-
+import struct
 from PIL import Image
-
 from app.core.contants import FAVICON_TYPES
 
 
 class FaviconGenerator:
-
-    def __init__(self, source_path: str) -> None:
+    def __init__(
+        self,
+        source_path: str,
+        name_app: str,
+        destination_path: str
+    ) -> None:
         self.source_path = source_path
-
+        self.destination_path = destination_path
+        self.name_app = name_app
+        
         if not os.path.isfile(self.source_path):
             raise FileNotFoundError(f"Source image not found: {self.source_path}")
-
-        self.output_dir = os.path.dirname(self.source_path)
+        
+        self.output_dir = self.destination_path
+        os.makedirs(self.output_dir, exist_ok=True)
 
     def generate_all(self) -> dict[str, str | Exception]:
         results: dict[str, str | Exception] = {}
-
+        
         for favicon_type in FAVICON_TYPES:
             result = self._generate(favicon_type)
             results[favicon_type["prefix"]] = result
             if isinstance(result, Exception):
                 print(f"[ERROR] {favicon_type['prefix']}: {result}")
             else:
-                print(f"[OK]    {favicon_type['prefix']}: {result}")
-
+                print(f"[OK] {favicon_type['prefix']}: {result}")
+        self._generate_code()
         return results
 
     def _generate(self, favicon_type: dict) -> str | Exception:
         try:
             filename = f"{favicon_type['prefix']}.{favicon_type['image_fmt']}"
             dest = os.path.join(self.output_dir, filename)
-
+            
             if favicon_type["image_fmt"] == "svg":
                 self._copy_as_svg(dest)
                 return dest
-
+            
+            if favicon_type["image_fmt"] == "ico":
+                return self._generate_ico(dest)
+            
             with Image.open(self.source_path) as img:
-                # Always convert to RGBA — required for ICO transparency and safe for PNG
                 img_copy = img.convert("RGBA")
-                img_copy = img_copy.resize(favicon_type["dimensions"], Image.Resampling.LANCZOS)
-
+                img_copy = img_copy.resize(
+                    favicon_type["dimensions"],
+                    Image.Resampling.LANCZOS
+                )
                 save_kwargs = self._build_save_kwargs(favicon_type)
                 img_copy.save(dest, **save_kwargs)
-
+            
             return dest
-
+        
         except Exception as exc:  # noqa: BLE001
             return exc
+
+    def _generate_ico(self, dest: str) -> str | Exception:
+        try:
+            ico_sizes = [(48, 48), (32, 32), (16, 16)]
+            with Image.open(self.source_path) as img:
+                img = img.convert("RGBA")
+                self._write_ico_bmp(img, dest, ico_sizes)
+            return dest
+        except Exception as exc:  # noqa: BLE001
+            return exc
+
+    @staticmethod
+    def _write_ico_bmp(source_img: Image.Image, dest: str, sizes: list[tuple[int, int]]) -> None:
+        entries = []
+        images_data = []
+
+        for w, h in sizes:
+            resized = source_img.resize((w, h), Image.Resampling.LANCZOS)
+            pixels = resized.load()
+
+            raw = bytearray()
+            for y in reversed(range(h)):
+                for x in range(w):
+                    r, g, b, a = pixels[x, y]
+                    raw += struct.pack("<BBBB", b, g, r, a)
+
+            bmp_header = struct.pack(
+                "<IiiHHIIiiII",
+                40,        # header size
+                w,         # width
+                h * 2,     # height x2
+                1,         # plans
+                32,        # bits by pixel
+                0,         # without compression (BI_RGB)
+                len(raw),  # image size in bytes
+                0, 0, 0, 0,
+            )
+
+            and_mask_row_bytes = ((w + 31) // 32) * 4
+            and_mask = bytes(and_mask_row_bytes * h)
+
+            img_bytes = bmp_header + bytes(raw) + and_mask
+            images_data.append(img_bytes)
+            entries.append({
+                "width": w if w < 256 else 0,
+                "height": h if h < 256 else 0,
+                "size": len(img_bytes),
+            })
+
+        out = struct.pack("<HHH", 0, 1, len(sizes))
+
+        offset = 6 + len(sizes) * 16
+        for entry, img_bytes in zip(entries, images_data):
+            out += struct.pack(
+                "<BBBBHHII",
+                entry["width"],
+                entry["height"],
+                0,    # colors 
+                0,    # reserved
+                1,    # planes
+                32,   # bpp
+                entry["size"],
+                offset,
+            )
+            offset += len(img_bytes)
+
+        for img_bytes in images_data:
+            out += img_bytes
+
+        with open(dest, "wb") as f:
+            f.write(out)
 
     def _build_save_kwargs(self, favicon_type: dict) -> dict:
         fmt = favicon_type["image_fmt"].upper()
         kwargs: dict = {"format": fmt}
-
+        
         if fmt == "PNG":
             kwargs["optimize"] = True
-
+        
+        elif fmt == "ICO":
+            kwargs["sizes"] = [favicon_type["dimensions"]]
+        
         return kwargs
 
     def _copy_as_svg(self, dest: str) -> None:
         filename, extension = os.path.splitext(self.source_path)
-
+        
         if extension == ".svg":
             shutil.copy2(self.source_path, dest)
+        
         else:
             raise RuntimeError(
                 f"Source {filename} is not an SVG file; "
                 "favicon.svg cannot be generated automatically with Pillow."
             )
+
+    def _generate_code(self):
+        print(f"""
+        [HTML code]
+        <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+        <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+        <link rel="shortcut icon" href="/favicon/favicon.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-title" content="{self.name_app}" />
+        <link rel="manifest" href="/favicon/site.webmanifest" />
+        """)
