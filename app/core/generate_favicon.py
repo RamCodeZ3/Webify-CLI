@@ -1,5 +1,5 @@
 import os
-import shutil
+import base64
 import struct
 from PIL import Image
 from app.core.contants import FAVICON_TYPES
@@ -9,20 +9,21 @@ class FaviconGenerator:
     def __init__(
         self,
         source_path: str,
-        name_app: str,
-        destination_path: str
+        name_app: str | None,
+        destination_path: str | None
     ) -> None:
         self.source_path = source_path
-        self.destination_path = destination_path
-        self.name_app = name_app
-        
+        self.name_app = name_app or "MyWebSite"
+
         if not os.path.isfile(self.source_path):
             raise FileNotFoundError(f"Source image not found: {self.source_path}")
-        
-        self.output_dir = self.destination_path
-        os.makedirs(self.output_dir, exist_ok=True)
 
-    def generate_all(self) -> dict[str, str | Exception]:
+        base_dest = destination_path or os.path.dirname(self.source_path)
+        self.output_dir = os.path.join(base_dest, "favicon")
+
+        os.makedirs(self.output_dir, exist_ok=True)
+    
+    async def generate_all(self) -> dict[str, str | Exception]:
         results: dict[str, str | Exception] = {}
         
         for favicon_type in FAVICON_TYPES:
@@ -38,7 +39,7 @@ class FaviconGenerator:
     def _generate(self, favicon_type: dict) -> str | Exception:
         try:
             filename = f"{favicon_type['prefix']}.{favicon_type['image_fmt']}"
-            dest = os.path.join(self.output_dir, filename)
+            dest = os.path.join(str(self.output_dir), filename)
             
             if favicon_type["image_fmt"] == "svg":
                 self._copy_as_svg(dest)
@@ -72,7 +73,12 @@ class FaviconGenerator:
             return exc
 
     @staticmethod
-    def _write_ico_bmp(source_img: Image.Image, dest: str, sizes: list[tuple[int, int]]) -> None:
+    def _write_ico_bmp(
+        source_img: Image.Image,
+        dest: str,
+        sizes: list[tuple[int, int]]
+    ) -> None:
+        
         entries = []
         images_data = []
 
@@ -145,16 +151,24 @@ class FaviconGenerator:
         return kwargs
 
     def _copy_as_svg(self, dest: str) -> None:
-        filename, extension = os.path.splitext(self.source_path)
+        with Image.open(self.source_path) as img:
+            img = img.convert("RGBA")
+            w, h = img.size
+            
+            from io import BytesIO
+            buf = BytesIO()
+            img.save(buf, format="PNG")
+            b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+
+        svg_content = (
+            f'<svg xmlns="http://www.w3.org/2000/svg" '
+            f'width="{w}" height="{h}" viewBox="0 0 {w} {h}">'
+            f'<image width="{w}" height="{h}" '
+            f'href="data:image/png;base64,{b64}"/></svg>'
+        )
         
-        if extension == ".svg":
-            shutil.copy2(self.source_path, dest)
-        
-        else:
-            raise RuntimeError(
-                f"Source {filename} is not an SVG file; "
-                "favicon.svg cannot be generated automatically with Pillow."
-            )
+        with open(dest, "w", encoding="utf-8") as f:
+            f.write(svg_content)
 
     def _generate_code(self):
         print(f"""
