@@ -1,6 +1,8 @@
 import os
 import base64
 import struct
+import json
+
 from PIL import Image
 from app.core.contants import FAVICON_TYPES
 
@@ -29,11 +31,23 @@ class FaviconGenerator:
         for favicon_type in FAVICON_TYPES:
             result = self._generate(favicon_type)
             results[favicon_type["prefix"]] = result
+            
             if isinstance(result, Exception):
                 print(f"[ERROR] {favicon_type['prefix']}: {result}")
+            
             else:
                 print(f"[OK] {favicon_type['prefix']}: {result}")
-        self._generate_code()
+        
+        result_manifest = await self._generate_webmanifest()
+
+        if isinstance(result_manifest, Exception):
+            print(f"[ERROR] webmanifest failure: {result_manifest}")
+
+        else:
+            print(f"[OK] successful webmanifest:")
+
+        await self._generate_code()
+
         return results
 
     def _generate(self, favicon_type: dict) -> str | Exception:
@@ -59,8 +73,8 @@ class FaviconGenerator:
             
             return dest
         
-        except Exception as exc:  # noqa: BLE001
-            return exc
+        except Exception as e:  # noqa: BLE001
+            return e
 
     def _generate_ico(self, dest: str) -> str | Exception:
         try:
@@ -69,8 +83,9 @@ class FaviconGenerator:
                 img = img.convert("RGBA")
                 self._write_ico_bmp(img, dest, ico_sizes)
             return dest
-        except Exception as exc:  # noqa: BLE001
-            return exc
+        
+        except Exception as e:  # noqa: BLE001
+            return e
 
     @staticmethod
     def _write_ico_bmp(
@@ -170,7 +185,7 @@ class FaviconGenerator:
         with open(dest, "w", encoding="utf-8") as f:
             f.write(svg_content)
 
-    def _generate_code(self):
+    async def _generate_code(self):
         print(f"""
         [HTML code]
         <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
@@ -180,3 +195,38 @@ class FaviconGenerator:
         <meta name="apple-mobile-web-app-title" content="{self.name_app}" />
         <link rel="manifest" href="/favicon/site.webmanifest" />
         """)
+
+    async def _generate_webmanifest(self):
+        try:
+            manifest_data = {
+               "name": f"{self.name_app}",
+               "short_name": f"{self.name_app}",
+               "icons": [
+                  {
+                        "src": "/favicon/web-app-manifest-192x192.png",
+                        "sizes": "192x192",
+                        "type": "image/png",
+                        "purpose": "maskable"
+                    },
+                   {
+                       "src": "/favicon/web-app-manifest-512x512.png",
+                       "sizes": "512x512",
+                       "type": "image/png",
+                       "purpose": "maskable"
+                    }
+                   ],
+               "theme_color": "#ffffff",
+               "background_color": "#ffffff",
+               "display": "standalone" 
+            }
+            
+            with open(
+                f"{self.output_dir}/site.webmanifest",
+                "w",
+                encoding="utf-8"
+            ) as f:
+                json.dump(manifest_data, f, indent=4, ensure_ascii=False)
+            
+            return f"{self.output_dir}/site.webmanifest"
+        except Exception as e:
+            return e
