@@ -1,8 +1,6 @@
 import typer
 
-from app.commands import converter_webp
-from app.commands import generate_favicon
-
+from app.commands import converter_webp, generate_favicon
 
 app = typer.Typer()
 

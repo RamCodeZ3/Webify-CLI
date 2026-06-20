@@ -17,10 +17,10 @@ async def convert_to_webp(path: str, delete_img: bool | None):
 
                 image_path = os.path.join(path, f"{name}.webp")
                 image.save(image_path, "webp")
-                print(f"{name}{extension} -> {name}.webp")
+                print(f"[✅]{name}{extension} -> {name}.webp")
 
                 if not delete_img:
                     os.remove(full_route)
 
     except Exception as e:
-        raise ValueError("There was an error: ", e)
+        raise ValueError("[❌]There was an error: ", e)

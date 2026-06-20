@@ -1,6 +1,8 @@
 import asyncio
 from pathlib import Path
+
 import typer
+
 from app.core.generate_favicon import FaviconGenerator
 
 app = typer.Typer()
@@ -12,14 +14,18 @@ def auto_complete_files(incomplete: str):
     if partial_path.is_dir():
         base_dir = partial_path
         prefix = ""
-    
+
     else:
-        base_dir = partial_path.parent if str(partial_path.parent) != "" else Path(".")
+        base_dir = (
+            partial_path.parent
+            if str(partial_path.parent) != ""
+            else Path(".")
+        )
         prefix = partial_path.name
 
     try:
         entries = list(base_dir.iterdir())
-    
+
     except (FileNotFoundError, NotADirectoryError, PermissionError):
         return []
 
