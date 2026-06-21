@@ -117,24 +117,11 @@ Webify/
 ├── app/
 │   ├── main.py
 │   ├── commands/
-│   │   ├── converter_webp.py
-│   │   └── generate_favicon.py
 │   └── core/
-│       ├── converter.py
-│       └── generate_favicon.py
+│   └── utils/
 ├── pyproject.toml
 └── README.md
 ```
-
----
-
-## Roadmap
-
-- [x] Convert `png`, `jpg`, `jpeg` → `webp`
-- [x] Batch conversion by directory
-- [x] Favicon generation from image
-- [ ] Recursive directory conversion
-- [ ] Output directory option
 
 ---
 
