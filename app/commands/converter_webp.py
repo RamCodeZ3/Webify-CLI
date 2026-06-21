@@ -12,8 +12,9 @@ app = typer.Typer()
 @app.command()
 def wc(
     path: str | None = typer.Argument(
-        None, help="route where the images will be converted",
-        autocompletion=auto_complete_files
+        None,
+        help="route where the images will be converted",
+        autocompletion=auto_complete_files,
     ),
     delete_img: bool = typer.Option(
         False,

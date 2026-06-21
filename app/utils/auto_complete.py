@@ -29,4 +29,3 @@ def auto_complete_files(incomplete: str):
             matches.append(candidate)
 
     return matches
-

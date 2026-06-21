@@ -1,5 +1,3 @@
-
-
 def report_outcome(
     success: bool | None = True,
     error_message: str | None = None,

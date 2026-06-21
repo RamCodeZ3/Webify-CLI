@@ -6,6 +6,7 @@ from app.utils.report import report_outcome
 
 extensions = [".jpeg", ".png", ".jpg"]
 
+
 class ConvertToWebp:
     async def convert_to_webp(self, path: str, delete_img: bool | None):
         if os.path.isfile(path):
@@ -17,7 +18,7 @@ class ConvertToWebp:
 
     @report_outcome(
         success_message="It was successfully converted to",
-        error_message="There was an error"
+        error_message="There was an error",
     )
     def _convert_to_webp(self, full_route, delete_img: bool | None):
         name, extension = os.path.splitext(full_route)
@@ -31,5 +32,6 @@ class ConvertToWebp:
                 os.remove(full_route)
 
             return f"{os.path.basename(name)}.webp"
+
 
 convertor = ConvertToWebp()
