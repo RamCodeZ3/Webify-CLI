@@ -7,7 +7,8 @@ select = ["E", "W", "F", "I", "UP"]
 [lint.isort]
 known-first-party = [
   "commands",
-  "core"
+  "core",
+  "utils"
 ]
 known-third-party = ["playwright"]
 section-order = [
