@@ -3,7 +3,7 @@ from pathlib import Path
 
 import typer
 
-from app.core.converter import convertor
+from app.core.converter_webp import convertor
 from app.utils.auto_complete import auto_complete_files
 
 
