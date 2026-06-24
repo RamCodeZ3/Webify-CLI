@@ -12,7 +12,7 @@ app = typer.Typer()
 @app.command()
 def favicon(
     path: str = typer.Argument(
-        ...,
+        None,
         help="route where the images will be converted",
         autocompletion=auto_complete_files,
     ),
@@ -20,15 +20,19 @@ def favicon(
         None,
         "--name-app",
         "-name",
-        help="",
+        help="website or app name",
     ),
     destination_path: str | None = typer.Option(
         None,
         "--destination",
         "-dest",
-        help="",
+        help="favicon exit",
     ),
 ):
+
+    if path is None:
+        typer.secho("specify the file", fg=typer.colors.RED)
+        raise typer.Abort()
 
     if destination_path is None:
         dest = Path(path)

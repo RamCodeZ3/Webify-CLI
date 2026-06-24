@@ -1,3 +1,6 @@
+import typer
+
+
 def report_outcome(
     success: bool | None = True,
     error_message: str | None = None,
@@ -9,11 +12,14 @@ def report_outcome(
                 result = func(*args, **kwargs)
 
                 if success:
-                    print(f"[✅]{success_message}: {result}")
+                    typer.secho(
+                        f"[✓]{success_message}: {result}",
+                        fg=typer.colors.GREEN,
+                    )
                 return result
 
             except Exception as e:
-                print(f"[❌]{error_message}: {e}")
+                typer.secho(f"[✗]{error_message}: {e}", fg=typer.colors.RED)
                 return None
 
         return wrapper
