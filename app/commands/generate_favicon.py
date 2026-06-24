@@ -1,41 +1,18 @@
 import asyncio
 from pathlib import Path
+
 import typer
+
 from app.core.generate_favicon import FaviconGenerator
+from app.utils.auto_complete import auto_complete_files
 
 app = typer.Typer()
-
-
-def auto_complete_files(incomplete: str):
-    partial_path = Path(incomplete) if incomplete else Path(".")
-
-    if partial_path.is_dir():
-        base_dir = partial_path
-        prefix = ""
-    
-    else:
-        base_dir = partial_path.parent if str(partial_path.parent) != "" else Path(".")
-        prefix = partial_path.name
-
-    try:
-        entries = list(base_dir.iterdir())
-    
-    except (FileNotFoundError, NotADirectoryError, PermissionError):
-        return []
-
-    matches = []
-    for entry in entries:
-        if entry.name.startswith(prefix):
-            candidate = str(entry) + ("/" if entry.is_dir() else "")
-            matches.append(candidate)
-
-    return matches
 
 
 @app.command()
 def favicon(
     path: str = typer.Argument(
-        ...,
+        None,
         help="route where the images will be converted",
         autocompletion=auto_complete_files,
     ),
@@ -43,15 +20,19 @@ def favicon(
         None,
         "--name-app",
         "-name",
-        help="",
+        help="website or app name",
     ),
     destination_path: str | None = typer.Option(
         None,
         "--destination",
         "-dest",
-        help="",
+        help="favicon exit",
     ),
 ):
+
+    if path is None:
+        typer.secho("specify the file", fg=typer.colors.RED)
+        raise typer.Abort()
 
     if destination_path is None:
         dest = Path(path)
